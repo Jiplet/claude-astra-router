@@ -140,4 +140,4 @@ This router is a standalone part you can try now.
 
 ## Credit and reuse
 
-Inspired by [The Actionable AI's Route Astra guide](https://theactionableai.com/guides/route-astra-guide/read). This repository provides an original Claude instruction template, a dispatch script and worked supporting material. See [attribution](ATTRIBUTION.md). Original repository content is available under the [MIT licence](LICENSE).
+ This repository provides an original Claude instruction template, a dispatch script and worked supporting material. See [attribution](ATTRIBUTION.md). Original repository content is available under the [MIT licence](LICENSE).
