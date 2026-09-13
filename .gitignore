@@ -4,3 +4,8 @@ private/
 .env
 .env.*
 .DS_Store
+
+# Local router setup and Python test artifacts
+/CLAUDE.md
+__pycache__/
+*.pyc

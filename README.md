@@ -1,107 +1,143 @@
-# AI Handover Guide
+# Claude + Astra Router
 
-**Give AI a clear job, pass on the evidence, and check what comes back.**
+**Keep Claude Code in charge. Send the execution to Astra. Bring the result back for review.**
 
-A free, practical guide for professionals preparing updates, briefs and other work that someone needs to rely on. Start with one AI tool you are allowed to use. No coding, terminal commands or extra subscription is required by the exercise.
+A standalone setup guide for professionals who want Claude Code to plan and review work while GPT-6 Astra does the assigned work through the Codex CLI.
 
-You will finish with a draft, a specific review and a corrected version you can inspect. You still decide whether it is fit to use.
+You describe the job to Claude. Claude writes a bounded brief, runs Astra, inspects what came back and sends specific fixes to the same worker session. You keep the final decision about using or sharing the result.
 
-[Start the exercise](#try-it-with-a-weekly-update) · [Copy the prompts](prompts/01-brief.md) · [Optional agent delegation](guides/delegation.md)
-
-## Why I made this
-
-An AI review of my LinkedIn drafts rejected an unsupported cost claim. The revised draft changed the sentence and kept the remaining approval decision visible. I could follow the criticism through to the correction.
-
-This guide turns that handover into something you can try on a familiar piece of work. [Read the real before-and-after](guides/real-correction.md).
+[Set it up](#set-it-up) · [Copy the Claude instructions](templates/CLAUDE.md) · [See the dispatch script](scripts/astra.py) · [Validation](guides/validation.md)
 
 ```mermaid
 flowchart TD
-    A[Brief and sources] --> B[Draft]
-    B --> C[Review against sources]
-    C --> D{Checks pass?}
-    D -->|No: one correction round| E[Specific fixes]
-    E --> F[Revised draft and recheck]
-    F --> G[Human decision]
-    D -->|Yes| G
-    G --> H[Accept, hold or stop]
+    U[You give Claude a task] --> C[Claude plans and writes the brief]
+    C --> A[Astra works through Codex CLI]
+    A --> R[Claude inspects the artifact and checks]
+    R --> D{Meets the brief?}
+    D -->|No: specific fixes, at most two rounds| A
+    D -->|Yes, or blocked with limits| H[Claude returns the result for your decision]
 ```
 
-A review result is advice to the person deciding. It does not grant permission to send or publish.
+## What this actually routes
 
-## Try it with a weekly update
+| Role | Runs in | Owns |
+|---|---|---|
+| **Claude: lead** | Claude Code | Brief, scope, planning, review and final explanation |
+| **Astra: worker** | Codex CLI, `gpt-6-astra` | The assigned analysis, draft or implementation, plus evidence of checks |
+| **You** | Your normal workflow | Whether to accept, send, publish or act on the work |
 
-**You need:** an approved AI chat tool, the ability to paste text, and time to read the result. The practice material is entirely fictional. If file uploads or links do not work, paste the contents of each file. A link alone does not prove that an assistant has read it.
+This is a Claude Code to Codex connection. It is not a comparison of chat apps, a Codex-only subagent setup, or an automatic best-model selector.
 
-You can read and copy everything on GitHub. To keep a local copy, use **Code → Download ZIP**, then extract the folder. No Git commands are needed.
+## Before you start
 
-### 1. Give it a defined job
+You need a local computer with **Claude Code, Codex CLI and Python 3** installed, both AI tools signed in, and access to `gpt-6-astra` through Codex. Both tools must be permitted to receive the project material. A Claude subscription does not provide Codex access, and a Codex login does not establish access to this specific model.
 
-Open [the source pack](examples/weekly-update/sources.md). Copy the whole pack into your AI conversation along with the fenced prompt in [01: Brief](prompts/01-brief.md). Follow the prompt's bracket-filling instructions using the practice values in the source pack.
+Use your existing approved subscriptions or API arrangements. There is no fixed paid-plan recommendation here. If either tool or Astra is unavailable, the setup stops and reports the problem.
 
-Keep the answer as your first draft. Do not supply the answer key yet.
+Installation and authentication instructions: [Claude Code quickstart](https://code.claude.com/docs/en/quickstart), [Codex CLI](https://learn.chatgpt.com/docs/cli). The first-use checks below are also explained in [setup and troubleshooting](guides/setup.md).
 
-### 2. Hand it over for review
+## Set it up
 
-Start a fresh conversation in the same approved tool, or another tool permitted to receive the same material. Paste the **original brief, complete source pack, first draft and [02: Review](prompts/02-review.md)**. The reviewer needs all four, even if the writer had access to them already.
+### 1. Download this folder
 
-Ask for the exact passage that fails a check, the supporting source and the required correction. A separate conversation provides a distinct review pass, not a guarantee of independent judgement.
+Use **Code → Download ZIP** on this GitHub page and extract it into a new folder. Open that folder in Claude Code. Keep this first trial separate from your real work project.
 
-If your first draft has no material defects, compare the review with the sources and move to step 4. To practise a correction deliberately, use the [intentionally flawed draft](examples/weekly-update/flawed-draft.md) as the draft in this step. It is a teaching example, not an observed AI failure.
+If you downloaded a ZIP, the folder does not have Git history. Ask Claude to initialise a local Git repository in this new folder. This creates a local checkpoint; it does not upload anything. A Git clone already has that history.
 
-### 3. Return specific fixes
+### 2. Add the routing instructions
 
-Give the original writer the review and [03: Revise](prompts/03-revise.md). Retain the original brief and sources; paste them again if they are not available in that conversation. Ask for one correction round and a record of what changed.
+Copy [templates/CLAUDE.md](templates/CLAUDE.md) to a file named `CLAUDE.md` at the root of the downloaded folder. Start a new Claude Code session in that folder so the project instructions are loaded.
 
-Send the revised draft back to the reviewer with the same brief, sources and review prompt. If a material problem remains after that correction round, hold the output for a person to resolve. Do not keep cycling until the assistants agree.
+You can ask Claude to make that copy. If a `CLAUDE.md` already exists, merge the routing section with its current instructions rather than replacing the file. Keep [scripts/astra.py](scripts/astra.py) in the project's `scripts/` folder.
 
-### 4. Inspect the result yourself
+Project `CLAUDE.md` files supply Claude Code's working instructions; they are not permission controls. [Claude Code documentation](https://code.claude.com/docs/en/how-claude-code-works).
 
-Use the source pack to answer:
+### 3. Check the two tools
 
-- Does the update distinguish completed work from planned work?
-- Is the conflict between records visible?
-- Are target dates kept separate from approved commitments?
-- Can you trace each important claim to the source named beside it?
-- Does it say what a person still needs to decide?
+Ask Claude:
 
-Then compare with the [expected review](examples/weekly-update/expected-review.md) and [illustrative corrected update](examples/weekly-update/corrected-update.md). Wording may differ. The evidence and remaining uncertainties should agree.
+```text
+Check that Python 3, Claude Code and Codex CLI are installed and that
+Codex is signed in. Read the project routing instructions. Do not print
+credentials or inspect unrelated files. Tell me if the setup is missing
+anything; do not install or change global settings automatically.
+```
 
-Keep your trial outputs privately. The optional `work/` folder is excluded from this repository's Git tracking, but that does not determine your AI provider's data handling or permissions.
+The first real worker call verifies whether the requested Astra model can run. A configuration file containing its name is not a successful test.
 
-## What to copy for your own work
+### 4. Give Claude a job to route
 
-| File | Use it to |
+Start with the included fictional sources:
+
+```text
+Use the Claude + Astra routing instructions for this task.
+
+Prepare a weekly update from examples/weekly-update/sources.md, accurate
+as at the date specified there. The reader is the procurement steering
+group. Keep it within 180 words, label important claims with their source
+IDs and preserve the conditional start date and unresolved approvals.
+
+You are the lead. Write the brief, then actually dispatch Astra using
+scripts/astra.py in read-only mode. Do not draft the update yourself.
+Tell Astra not to read the answer-key files.
+
+Read Astra's result and check each important claim against the sources.
+If it needs correction, send the exact findings back to the same recorded
+Astra session. Return the update, what you checked and anything I still
+need to decide. Do not send or publish it.
+```
+
+The downloaded folder also contains answer keys. Asking Astra not to read them is an instruction, not an access restriction, so this starter exercise is not a blind test. For a blind trial, use a separate Git folder containing only the runner and permitted source material.
+
+Watch for an actual `scripts/astra.py run` tool call and the returned artifact paths. “I would ask Astra” is a plan, not a completed dispatch.
+
+## What happens underneath
+
+Claude writes the task into a brief file and runs:
+
+```bash
+python3 scripts/astra.py run --project . --brief work/update/brief.md --run-dir work/update/astra
+```
+
+The Python script calls `codex exec` with `--model gpt-6-astra`, passes the brief through standard input, records the exact session ID and saves the result. It defaults to a read-only worker sandbox. For an authorised file-editing task, Claude can explicitly select `--sandbox workspace-write`.
+
+For a correction, Claude writes the findings into another file and runs:
+
+```bash
+python3 scripts/astra.py revise --run-dir work/update/astra --brief work/update/revision-1.md
+```
+
+The script targets that run's recorded session, not the most recently active Codex task. It permits two revision calls, records each attempt separately and reports failure rather than treating old output as a fresh result. Claude still has to assess the content.
+
+The connection uses the installed Codex CLI directly. It does not require a Claude-to-Codex plugin, API server or global model-setting change. The commands follow [Codex's non-interactive interface](https://learn.chatgpt.com/docs/non-interactive-mode).
+
+## What to look for before accepting a result
+
+Claude should show the actual artifact and explain which checks passed. For a written update, inspect the sources and missing information. For a spreadsheet or code change, inspect the delivered file and appropriate tests; a summary of edits alone is insufficient.
+
+A useful reviewer can also stop the work. [This real correction](guides/real-correction.md) shows an unsupported claim removed from my LinkedIn drafts and another draft left blocked for missing personal evidence. It illustrates the review standard; it is not proof that the whole Claude-to-Astra connection ran in that earlier task.
+
+## Files and limits
+
+| File | Purpose |
 |---|---|
-| [01: Brief](prompts/01-brief.md) | Define the reader, decision, sources and finish line |
-| [02: Review](prompts/02-review.md) | Check important claims and request precise fixes |
-| [03: Revise](prompts/03-revise.md) | Correct the output without filling gaps with guesses |
-| [Optional delegation](guides/delegation.md) | Give a lead assistant bounded work to assign and review |
+| [Claude instruction template](templates/CLAUDE.md) | Assigns planning and review to Claude; execution to Astra |
+| [Dispatch script](scripts/astra.py) | Runs Astra and resumes the exact worker session for fixes |
+| [Setup and troubleshooting](guides/setup.md) | Prerequisites, permissions, output files and failure recovery |
+| [Fictional source pack](examples/weekly-update/sources.md) | A first task that requires no employer material |
+| [Review prompt](prompts/02-review.md) | Optional checklist for Claude's factual review |
+| [Validation](guides/validation.md) | What was actually tested and what remains uncertain |
 
-For real work, use only material your organisation allows in the selected tool. Keep originals intact. Check access before handing a task to a different environment. Change the acceptance checks to fit the decision: an internal meeting brief and a financial recommendation need different levels of assurance.
+Keep briefs, worker logs and real outputs in the ignored `work/` folder. Do not commit credentials or private work. The scripts preserve the selected sandbox and do not bypass approval or security controls. Instructions to limit file scope still need to be checked; they are not an enforced per-file allowlist.
 
-## When the work should change hands
-
-| Problem | Next step |
-|---|---|
-| The source is missing or contradictory | Supply the permitted evidence or leave the issue unresolved |
-| The assistant cannot access the source | Resolve access or use an approved environment that can |
-| The requested output is unclear | Improve the brief before another attempt |
-| The evidence and brief are adequate, but reasoning fails | Consider another model while keeping the same checks |
-
-An additional model has to earn the time spent handing over and checking. Use the simple path while it does the job. [My optional routing approach](guides/delegation.md) explains where I use a lead and specialist assistants.
-
-## What has been checked
-
-The real editorial correction is documented separately from the fictional exercise. The practice answer key was checked against its source pack. [Validation notes](guides/validation.md) record the checks and their limits. This is a guide and prompt collection, not an installed integration or an automatic router. It does not claim measured savings or that a particular model is best.
+The guide currently uses Astra explicitly. It does not silently send work to a cheaper model or claim a cost saving. Add other routing choices only after you have evidence that they suit your work.
 
 ## A broader OS is coming
 
 I've been curating a broader AI operating system over the past year: the instructions, context and working practices behind how I use these tools. I'll share more soon.
 
-This guide stands on its own. You can use it without waiting for that release.
+This router is a standalone part you can try now.
 
 ## Credit and reuse
 
-Inspired by [The Actionable AI's Route Astra guide](https://theactionableai.com/guides/route-astra-guide/read). This repository contributes original prompts, a professional practice exercise and a documented correction. It does not reproduce the source guide's routing block or commands. See [attribution](ATTRIBUTION.md).
-
-By [Jacob / Jiplet](https://github.com/Jiplet). Original repository content is available under the [MIT licence](LICENSE).
+Inspired by [The Actionable AI's Route Astra guide](https://theactionableai.com/guides/route-astra-guide/read). This repository provides an original Claude instruction template, a dispatch script and worked supporting material. See [attribution](ATTRIBUTION.md). Original repository content is available under the [MIT licence](LICENSE).

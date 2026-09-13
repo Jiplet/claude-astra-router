@@ -1,30 +1,48 @@
-# Validation for the initial release
+# Router validation
 
-[Back to the guide](../README.md)
+[Back to Claude + Astra Router](../README.md)
 
-Checked on 13 September 2026. The practice scenario deliberately uses a fictional 14 September reporting date.
+Checked on 13 September 2026 on macOS. Local versions: Claude Code 2.1.270 and Codex CLI 0.154.0. The worker model was explicitly requested as `gpt-6-astra`.
 
-## What was run
+## Actual Claude → Astra → Claude → Astra run
 
-A Terra (`gpt-5.6-terra`) subagent received only the three prompts, fictional sources and intentionally flawed draft. It did not receive the expected-review or corrected-update answer keys. It reviewed the faulty draft, then performed one revision in the same agent context.
+The lead ran Claude Code in an isolated local Git folder containing only the runner and fictional source pack. Claude received the same routing instruction template explicitly in its instructions. Claude's safe mode disabled unrelated customisations while retaining normal authentication and tool permissions; this trial did not test automatic discovery of an installed project `CLAUDE.md`.
 
-The run found all six issue groups in the answer key: unconfirmed ownership, invented approval, an obsolete unconditional start date, misrepresented panel action, hidden decisions and missing source labels. Its revised update retained the security dependency and unknown commercial approval status. The lead compared those results with the original sources.
+The observed sequence was:
 
-The returned update contained 107 whitespace-separated words/items including source labels, under the 180-word limit. The agent's own reported count was 104; the lead corrected the count by computation. The model's self-report was not used as the check.
+1. Claude read the fictional sources and wrote a complete worker brief with the source text embedded.
+2. Claude invoked `scripts/astra.py run`. Codex returned an Astra answer and a recorded session ID.
+3. Claude inspected the actual result against the sources and wrote review findings. The first answer passed those factual checks.
+4. As a deliberate test of revision, Claude requested a reporting-date heading with an otherwise unchanged body.
+5. Claude invoked `scripts/astra.py revise`. It resumed the exact recorded session with `gpt-6-astra` and the same read-only sandbox.
+6. Claude read the second result and metadata and returned its verification summary. The lead then checked the records and compared both outputs independently.
 
-[Read the actual returned update](../examples/weekly-update/observed-trial.md).
+Both calls returned success and `turn.completed`. Session IDs, model and sandbox matched. The revised output was exactly the requested heading plus the original 145-word/item body, including source labels. The sources and runner were unchanged. No tool actions were taken by the Astra worker itself in this text-only trial.
 
-## What was inspected
+[Read the actual revised output](../examples/weekly-update/router-observed.md).
 
-- The illustrative answer key against the complete source pack.
-- The original personal editorial sentence, dated QA finding and revised wording used in the real case note.
-- The complete handover inputs and source labels in the instructions.
-- Relative links, repository contents and the distinction between original records, fictional examples and observed trial output.
+Non-blocking local configuration warnings appeared in the worker logs, including a local connector startup issue. They did not prevent the text task from completing. The runner rejects terminal errors, failed turns, missing completion, missing output and mismatched resumed sessions. It records item-level diagnostic messages in the event log for Claude to inspect; it does not classify every diagnostic as a fatal error.
 
-Sol performed a separate documentation review. Two findings were corrected: the optional delegated revision now explicitly includes the complete original brief, sources, draft and review; the answer key separates the final human decisions with precise source labels. The blind run had already received full inputs, so these documentation corrections did not change its source facts or result.
+## Script tests
 
-## What this does not establish
+Ten automated tests mock the Codex subprocess. They check:
 
-This was one model-run trial of the deliberately faulty review/revision path. It was not a novice usability study, a test of every listed AI product, or a benchmark of model quality, speed or cost. The reviewer and reviser shared one agent context during that trial; it does not validate independence between those roles.
+- Literal prompt input and paths with spaces, without shell interpolation.
+- Fixed Astra model and read-only default.
+- Exact session reuse and sandbox preservation on revision.
+- Existing-run protection, concurrent-revision lock and two-revision limit.
+- Missing session, missing or empty output, nonzero exit and launch failure.
+- Required terminal completion, terminal errors and mismatched resumed IDs.
+- Immutable prompt snapshots and separation of failed results from successful ones.
 
-The fresh-writer path and the complete optional Codex orchestration request were not exercised end to end for this release. They remain instructions to try in your own permitted environment. A successful exercise does not make real work safe to use without its own review.
+Run them with `python3 -m unittest discover -s tests -v`. They passed for this release. Local links, syntax and staged diff checks were also inspected before publication.
+
+## Supporting exercise, separate from the router test
+
+The earlier manual exercise used a Terra agent to review and repair an intentionally flawed draft without the answer key in its supplied context. It found all six seeded issue groups. Its [107-word/item output](../examples/weekly-update/observed-trial.md) and the [illustrative answer key](../examples/weekly-update/corrected-update.md) remain available as supporting material. That exercise alone does not validate Claude-to-Astra routing.
+
+## Limits
+
+This was one text-only integration trial with one planned revision. It did not test workspace-write execution, Windows, a novice's setup experience, every account's model access, cost savings, automatic project-template discovery, or long-running recovery after crashes. A failed worker may have made partial changes in workspace-write mode; inspect the project before retrying.
+
+A successful process and review still need a person's acceptance decision. The [real editorial correction](real-correction.md) illustrates that review standard using a different earlier task; it is not retroactive proof that the router ran in that task.
