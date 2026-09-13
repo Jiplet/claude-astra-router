@@ -1,0 +1,6 @@
+# Keep local trial outputs and personal material out of this guide.
+work/
+private/
+.env
+.env.*
+.DS_Store
