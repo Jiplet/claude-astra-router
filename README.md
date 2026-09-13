@@ -15,7 +15,7 @@ An AI review of my LinkedIn drafts rejected an unsupported cost claim. The revis
 This guide turns that handover into something you can try on a familiar piece of work. [Read the real before-and-after](guides/real-correction.md).
 
 ```mermaid
-flowchart LR
+flowchart TD
     A[Brief and sources] --> B[Draft]
     B --> C[Review against sources]
     C --> D{Checks pass?}
